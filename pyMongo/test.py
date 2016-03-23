@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-'''
-@author: feng-pu
-'''
 
 from pymongo import MongoClient
-client = MongoClient('jpp.no-ip.org', 80)
+client = MongoClient('localhost', 27017)
 db = client.educocoMongoLog
 collection = db.action_log
 distinctSet = collection.distinct("actionName")

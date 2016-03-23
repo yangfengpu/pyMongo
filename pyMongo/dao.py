@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
-'''
-@author: feng-pu
-'''
+
 from pymongo import MongoClient
 
-class GuDao:
+class EduDao:
     
     def __init__(self):
-        server = "jpp.no-ip.org"
-        port = 80
+        server = "localhost"
+        port = 27017
         client = MongoClient(server, port)
         db = client.educocoMongoLog
-        collection = db.gu_log
-        
+        self.activity = db.activity_log
+        self.action = db.action_log
 
 if __name__ == '__main__':
-    mdao = GuDao()
+    mdao = EduDao()

@@ -3,10 +3,17 @@ from pymongo import MongoClient
 from bson.son import SON
 from datetime import datetime, timedelta
 from sets import Set
+from types import NoneType
+import urllib
+password = urllib.quote_plus('12345')
 
 client = MongoClient("localhost")
-db = client.educocoMongoLog
-collection = db.activity_log
+#client = MongoClient('mongodb://alf:' + '12345' + '@127.0.0.1')
+#db = client.educocoMongoLog
+db = client.educoco
+db.authenticate("alf","12345")
+#collection = db.activity_log
+collection = db.activity
 users = collection.distinct("subject")
 #collection.find({"category": "movie"}).distinct("tags");
 activities = collection.distinct("predicate")
@@ -33,7 +40,7 @@ def aggregateByDateInterval(datePair):
     pipeline = [{"$match" : {"$and": [{"time" : {"$lt": d1 }}, {"time" : {"$gte": d2 }}]}},
             {"$group": {"_id": "$predicate", "count": {"$sum": 1}}}
             ]
-    acts = list(db.activity_log.aggregate(pipeline))
+    acts = list(collection.aggregate(pipeline))
     for act in acts:
         print act["count"], "    ", act["_id"].split("/")[-1]
 
@@ -44,7 +51,7 @@ def aggregatePersonalDataByDateInterval(datePair, userId):
     pipeline = [{"$match" : {"$and": [{"subject": userUri}, {"time" : {"$lt": endDatetime }}, {"time" : {"$gte": startDatetime }}]}},
             {"$group": {"_id": "$predicate", "count": {"$sum": 1}}}
             ]
-    acts = list(db.activity_log.aggregate(pipeline))
+    acts = list(collection.aggregate(pipeline))
     for act in acts:
         print act["count"], "    ", act["_id"].split("/")[-1]
 
@@ -71,7 +78,7 @@ def aggregateRankingUsersByDateInterval(datePair, predicate):
             {"$group": {"_id": "$subject", "count": {"$sum": 1}}},
             { "$sort" : { "count" : -1 } }
             ]
-    acts = list(db.activity_log.aggregate(pipeline))
+    acts = list(collection.aggregate(pipeline))
     for act in acts:
         print act["count"], "    ", act["_id"].split("/")[-1]
         
@@ -105,8 +112,8 @@ def get24HoursDateTime(aDatetime, offset):
 def getWeeklyDateTime(aDatetime):
     return aDatetime.weekday()
 
-d1 = datetime(2015,06,15,0)
-d2 = datetime(2015,06,21,0)
+d1 = datetime(2015,06,30,0)
+d2 = datetime(2015,07,21,0)
 datePair = (d1, d2)
 #aggregatePersonalDataByDateInterval(datePair, 46)#146478
 #aggregateByDateInterval(datePair)
@@ -120,16 +127,37 @@ def getPersonalActivityListByInterval(datePair, userId):
     pipeline = [{"$match" : {"$and": [{"subject": userUri}, {"time" : {"$lt": endDatetime }}, {"time" : {"$gte": startDatetime }}]}},
             { "$sort" : { "time" : -1 } }
             ]
-    acts = list(db.activity_log.aggregate(pipeline))
+    acts = list(collection.aggregate(pipeline))
     for act in acts:
+        print act.keys()
         print act["time"], act["predicate"], " "
 
-getPersonalActivityListByInterval(datePair,46)
+getPersonalActivityListByInterval(datePair,135378)
 
 #Scenario: Hourly statistics
 for hour in get24HoursDateTime(d1, 8):
     print "The Time Interval: ", hour
-    aggregateByDateInterval(hour) 
+    #aggregateByDateInterval(hour)
+    getPersonalActivityListByInterval(hour,135378) 
 
 print getWeeklyDateTime(d1)
 print getWeeklyDateTime(d2)
+print collection.find().count()
+#distinct IPs
+clientIps = db.action.distinct("clientIp")
+
+print clientIps
+#distinct IP set
+ipset = Set()
+nt = 0
+for c in clientIps:
+    if not (c == None):
+        suffix = c.split(".")[-1]
+        lengthOfSuffix = len(suffix) + 1
+        ipset.add(c[:-(lengthOfSuffix)])
+    else:
+        nt = nt + 1
+
+print nt, " ", len(ipset)
+print ipset
+
